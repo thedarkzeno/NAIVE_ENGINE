@@ -1,0 +1,6 @@
+# Arquivos gerados pelo CMake / compilador
+build/
+
+# Configurações locais de IDE
+.vs/
+.vscode/
