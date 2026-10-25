@@ -22,6 +22,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(glfw)
 
 # --- Executável ---
-add_executable(NAIVE_ENGINE src/main.cpp)
+add_executable(NAIVE_ENGINE 
+    src/main.cpp
+    src/Application.cpp
+)
+
 
 target_link_libraries(NAIVE_ENGINE PRIVATE Vulkan::Vulkan glfw)
