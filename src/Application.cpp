@@ -37,6 +37,7 @@ void Application::mainLoop() {
 }
 
 void Application::cleanup(){
+    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vkDestroyInstance(m_instance, nullptr);
     glfwDestroyWindow(m_window);
     glfwTerminate();
@@ -44,6 +45,8 @@ void Application::cleanup(){
 
 void Application::initVulkan(){
     createInstance();
+    createSurface();
+    pickPhysicalDevice();
 }
 
 void Application::createInstance(){
@@ -92,7 +95,7 @@ void Application::createInstance(){
 }
 
 bool Application::checkValidationLayerSupport(){
-    //quantas layers existe?
+    //quantas layers existem?
     uint32_t layerCount = 0;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -117,4 +120,55 @@ bool Application::checkValidationLayerSupport(){
         }
     }
     return true;
+}
+
+void Application::createSurface(){
+    VkResult result = glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface);
+    if(result != VK_SUCCESS){
+        throw std::runtime_error("Erro ao criar a surface");
+    }
+}
+
+void Application::pickPhysicalDevice(){
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+
+    if(deviceCount == 0){
+        throw std::runtime_error("Nenhuma GPU com suporte a Vulkan encontrada");
+    }
+
+    //pega a lista de gpus
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+
+    for(VkPhysicalDevice device : devices){
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(device, &properties);
+
+        std::cout << "GPU encontrada: " << properties.deviceName << "\n";
+
+        // precise suportar Vulkan 1.3
+        if(properties.apiVersion < VK_API_VERSION_1_3){
+            continue;
+        }
+
+        // guarda a primeira GPU compatível
+        if(m_physicalDevice == VK_NULL_HANDLE){
+            m_physicalDevice = device;
+        }
+
+        // GPU dedicada tem preferencia sobre as outras
+        if(properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU){
+            m_physicalDevice = device;
+            break;
+        }
+    }
+
+    if(m_physicalDevice == VK_NULL_HANDLE){
+        throw std::runtime_error("Nenhuma GPU com suporte a Vulkan 1.3 encontrada");
+    }
+
+    VkPhysicalDeviceProperties selected{};
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &selected);
+    std::cout << "GPU escolhida: " << selected.deviceName << "\n";
 }
